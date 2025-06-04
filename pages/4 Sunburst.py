@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 import sys
+import json
 from tools import sourceformat as sf
 
 
@@ -33,6 +34,7 @@ with st.popover("🔗 Menu"):
     st.page_link("pages/4 Sunburst.py", label="Sunburst", icon="4️⃣")
     st.page_link("pages/5 Burst Detection.py", label="Burst Detection", icon="5️⃣")
     st.page_link("pages/6 Keywords Stem.py", label="Keywords Stem", icon="6️⃣")
+    st.page_link("pages/7 Sentiment Analysis.py", label="Sentiment Analysis", icon="7️⃣")
     
 st.header("Sunburst Visualization", anchor=False)
 st.subheader('Put your file here...', anchor=False)
@@ -66,9 +68,18 @@ def upload(extype):
 
 @st.cache_data(ttl=3600)
 def conv_txt(extype):
-    if "pmc" in uploaded_file.name.lower():
+    if("pmc" in uploaded_file.name.lower() or "pubmed" in uploaded_file.name.lower()):
         file = uploaded_file
         papers = sf.medline(file)
+
+    elif("hathi" in uploaded_file.name.lower()):
+        papers = pd.read_csv(uploaded_file,sep = '\t')
+        papers = sf.htrc(papers)
+        col_dict={'title': 'title',
+        'rights_date_used': 'Year',
+        }
+        papers.rename(columns=col_dict, inplace=True)
+        papers['Cited by'] = papers.groupby(['Keywords'])['Keywords'].transform('size')
     else:
         col_dict = {'TI': 'Title',
                 'SO': 'Source title',
@@ -83,7 +94,6 @@ def conv_txt(extype):
     print(papers)
     return papers
 
-
 @st.cache_data(ttl=3600)
 def conv_json(extype):
     col_dict={'title': 'title',
@@ -91,7 +101,11 @@ def conv_json(extype):
     'content_provider_code': 'Document Type',
     'Keywords':'Source title'
     }
-    keywords = pd.read_json(uploaded_file)
+
+    data = json.load(uploaded_file)
+    hathifile = data['gathers']
+    keywords = pd.DataFrame.from_records(hathifile)
+
     keywords = sf.htrc(keywords)
     keywords['Cited by'] = keywords.groupby(['Keywords'])['Keywords'].transform('size')
     keywords.rename(columns=col_dict,inplace=True)
@@ -134,7 +148,7 @@ if uploaded_file is not None:
             GAP = MAX - MIN
             return papers, MIN, MAX, GAP, MIN1, MAX1
 
-        tab1, tab2, tab3 = st.tabs(["📈 Generate visualization", "📓 Recommended Reading","Download help"])
+        tab1, tab2, tab3 = st.tabs(["📈 Generate visualization", "📓 Recommended Reading", "⬇️ Download Help"])
         
         with tab1:    
             #===sunburst===
@@ -167,19 +181,23 @@ if uploaded_file is not None:
                 vis[['doctype','source','citby','year']] = papers[['Document Type','Source title','Cited by','Year']]
                 viz=vis.groupby(['doctype', 'source', 'year'])['citby'].agg(['sum','count']).reset_index()  
                 viz.rename(columns={'sum': 'cited by', 'count': 'total docs'}, inplace=True)
-                                
+
+
+
                 fig = px.sunburst(viz, path=['doctype', 'source', 'year'], values='total docs',
                               color='cited by', 
                               color_continuous_scale='RdBu',
                               color_continuous_midpoint=np.average(viz['cited by'], weights=viz['total docs']))
                 fig.update_layout(height=800, width=1200)
-                return fig
+                return fig, viz
             
             years, papers = listyear(extype)
     
             if {'Document Type','Source title','Cited by','Year'}.issubset(papers.columns):
-                fig = vis_sunbrust(extype)
+                fig, viz = vis_sunbrust(extype)
                 st.plotly_chart(fig, height=800, width=1200) #use_container_width=True)
+                
+                st.dataframe(viz)
                
             else:
                 st.error('We require these columns: Document Type, Source title, Cited by, Year', icon="🚨")
@@ -194,4 +212,3 @@ if uploaded_file is not None:
     except:
         st.error("Please ensure that your file is correct. Please contact us if you find that this is an error.", icon="🚨")
         st.stop()
-

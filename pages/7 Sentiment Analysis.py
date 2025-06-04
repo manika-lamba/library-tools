@@ -5,8 +5,8 @@ import pandas as pd
 import re
 import nltk
 import pandas as pd
-#from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+nltk.download('stopwords')
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
@@ -14,9 +14,9 @@ nltk.download('punkt_tab')
 nltk.download('vader_lexicon')
 from textblob import TextBlob
 import os
-import matplotlib.pyplot as plt
 import numpy as np
-
+import plotly.express as px
+import json
 from tools import sourceformat as sf
 
 #===config===
@@ -37,6 +37,15 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
+with st.popover("🔗 Menu"):
+    st.page_link("https://www.coconut-libtool.com/", label="Home", icon="🏠")
+    st.page_link("pages/1 Scattertext.py", label="Scattertext", icon="1️⃣")
+    st.page_link("pages/2 Topic Modeling.py", label="Topic Modeling", icon="2️⃣")
+    st.page_link("pages/3 Bidirected Network.py", label="Bidirected Network", icon="3️⃣")
+    st.page_link("pages/4 Sunburst.py", label="Sunburst", icon="4️⃣")
+    st.page_link("pages/5 Burst Detection.py", label="Burst Detection", icon="5️⃣")
+    st.page_link("pages/6 Keywords Stem.py", label="Keywords Stem", icon="6️⃣")
+    st.page_link("pages/7 Sentiment Analysis.py", label="Sentiment Analysis", icon="7️⃣")
 
 st.header("Sentiment Analysis", anchor=False)
 st.subheader('Put your file here...', anchor=False)
@@ -82,9 +91,18 @@ def upload(file):
 
 @st.cache_data(ttl=3600)
 def conv_txt(extype):
-    if "pmc" in uploaded_file.name.lower():
+    if("pmc" in uploaded_file.name.lower() or "pubmed" in uploaded_file.name.lower()):
         file = uploaded_file
         papers = sf.medline(file)
+
+    elif("hathi" in uploaded_file.name.lower()):
+        papers = pd.read_csv(uploaded_file,sep = '\t')
+        papers = sf.htrc(papers)
+        col_dict={'title': 'title',
+        'rights_date_used': 'Year',
+        }
+        papers.rename(columns=col_dict, inplace=True)
+        
     else:
         col_dict = {'TI': 'Title',
                 'SO': 'Source title',
@@ -105,11 +123,16 @@ def conv_json(extype):
     col_dict={'title': 'title',
     'rights_date_used': 'Year',
     }
-    keywords = pd.read_json(uploaded_file)
+
+    data = json.load(uploaded_file)
+    hathifile = data['gathers']
+    keywords = pd.DataFrame.from_records(hathifile)
+
     keywords = sf.htrc(keywords)
     keywords.rename(columns=col_dict,inplace=True)
     return keywords
 
+@st.cache_resource(ttl=3600)
 def conv_pub(extype):
     if (get_ext(extype)).endswith('.tar.gz'):
         bytedata = extype.read()
@@ -138,7 +161,7 @@ if uploaded_file is not None:
 
         coldf = sorted(papers.select_dtypes(include=['object']).columns.tolist())
             
-        c1, c2 = st.columns([3,4])
+        c1, c2 = st.columns(2)
         ColCho = c1.selectbox(
                 'Choose column',
                 (coldf), on_change=reset_all)
@@ -146,10 +169,11 @@ if uploaded_file is not None:
             'Choose method',[
             'TextBlob','NLTKvader']
         )
-        words_to_remove = c1.text_input("Remove specific words. Separate words by semicolons (;)")
-        rem_copyright = c2.toggle('Remove copyright statement', value=True, on_change=reset_all)
+        words_to_remove = c1.text_input("Remove specific words. Separate words by semicolons (;)")        
+        wordcount = c2.number_input(label = "Words displayed", min_value = 1, step = 1, value=5)-1
+        rem_copyright = c1.toggle('Remove copyright statement', value=True, on_change=reset_all)
         rem_punc = c2.toggle('Remove punctuation', value=True, on_change=reset_all)
-         
+
         #===clean csv===
         @st.cache_data(ttl=3600, show_spinner=False)
         def clean_csv(extype):
@@ -169,10 +193,13 @@ if uploaded_file is not None:
               
             words_rmv = [word.strip() for word in words_to_remove.split(";")]
             remove_dict = {word: None for word in words_rmv}
+            
+            @st.cache_resource(ttl=3600)
             def remove_words(text):
                  words = text.split()
                  cleaned_words = [word for word in words if word not in remove_dict]
                  return ' '.join(cleaned_words) 
+            
             paper['Sentences__'] = paper['Abstract_pre'].map(remove_words)
 
             return paper
@@ -181,17 +208,53 @@ if uploaded_file is not None:
         if method == 'NLTKvader':
             analyzer = SentimentIntensityAnalyzer()
 
+            @st.cache_resource(ttl=3600)
             def get_sentiment(text):
                 score = analyzer.polarity_scores(text)
                 return score
-            paper['Sentiment'] = paper['Sentences__'].apply(get_sentiment)
+
+            tab1, tab2, tab3, tab4 = st.tabs(["📈 Result", "📃 Reference", "📓 Recommended Reading", "⬇️ Download Help"])
+            with tab1:
+                
+                paper['Scores'] = paper['Sentences__'].apply(get_sentiment)
+
+                scoreframe = pd.DataFrame()
+
+                scoreframe['Phrase'] = pd.Series(paper['Sentences__'])
+
+                scoreframe[['Negativity','Neutrality','Positivity','Compound']] = pd.DataFrame.from_records(paper['Scores'])
+
+                scoreframe = scoreframe.groupby(scoreframe.columns.tolist(),as_index=False).size()
+
+                scoreframe = scoreframe.truncate(after = wordcount)
+
+                with st.expander("Sentence and Results"):
+                    finalframe = pd.DataFrame()
+                    finalframe['Sentence'] = scoreframe['Phrase']
+                    finalframe[['Negativity','Neutrality','Positivity','Compound']] = scoreframe[['Negativity','Neutrality','Positivity','Compound']]
+                    finalframe[['Count']] = scoreframe[['size']]
+
+                    st.dataframe(finalframe, use_container_width=True)
+
+            with tab2:
+                st.markdown('**Hutto, C. and Gilbert, E. (2014) ‘VADER: A Parsimonious Rule-Based Model for Sentiment Analysis of Social Media Text’, Proceedings of the International AAAI Conference on Web and Social Media, 8(1), pp. 216–225.** https://doi.org/10.1609/icwsm.v8i1.14550')
+
+            with tab3:
+                st.markdown('**Lamba, M., & Madhusudhan, M. (2021, July 31). Sentiment Analysis. Text Mining for Information Professionals, 191–211.** https://doi.org/10.1007/978-3-030-85085-2_7')
+
+            with tab4:
+                st.subheader(':blue[CSV Results]', anchor=False)
+                st.text("Click Download button")
+                st.markdown("![Downloading results](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/sentitable.png)")
         
         elif(method == 'TextBlob'):
             
+            @st.cache_resource(ttl=3600)
             def get_sentimentb(text):
                 line = TextBlob(text)
                 return line.sentiment
 
+            @st.cache_resource(ttl=3600)
             def get_assessments(frame):
                 text = TextBlob(str(frame))
 
@@ -204,9 +267,11 @@ if uploaded_file is not None:
 
                 return phrase, phrasepolar, phrasesubject
 
+            @st.cache_resource(ttl=3600)
             def mergelist(data):
                 return ' '.join(data)
 
+            @st.cache_resource(ttl=3600)
             def assignscore(data):
                 if data>0:
                     return "Positive"
@@ -227,64 +292,70 @@ if uploaded_file is not None:
 
             phraseframe["Score"] = phraseframe["Polarity"].apply(assignscore)
 
-            neut = phraseframe.drop(phraseframe[phraseframe['Score']=='Positive'].index)
+            neut = phraseframe.loc[phraseframe['Score']=="Neutral"]
+            neut.reset_index(inplace = True)
 
-            neut = neut.drop(neut[neut['Score']=='Negative'].index)
+            pos = phraseframe.loc[phraseframe['Score']=="Positive"]
+            pos.reset_index(inplace = True)
 
-            frame = phraseframe.drop(phraseframe[phraseframe['Score']=='Neutral'].index)
-
-            pos = frame.drop(frame[frame['Score']=='Negative'].index)
-
-            neg = frame.drop(frame[frame['Score']=='Positive'].index)
-
-
+            neg = phraseframe.loc[phraseframe['Score']=="Negative"]
+            neg.reset_index(inplace = True)
 
             paper['Sentiment'] = paper['Sentences__'].apply(get_sentimentb)
 
             pos.sort_values(by=["size"], inplace = True, ascending = False, ignore_index = True)
-
-            pos = pos.truncate(after = 10)
-
+            pos = pos.truncate(after = wordcount)
 
             neg.sort_values(by=["size"], inplace = True, ascending = False, ignore_index = True)
-            
-            neg = neg.truncate(after = 10)
+            neg = neg.truncate(after = wordcount)
         
             neut.sort_values(by=["size"], inplace = True, ascending = False, ignore_index = True)
+            neut = neut.truncate(after = wordcount)
 
-            neut = neut.truncate(after = 10)
-
-            #display tables and graphs
-
-            st.header("Positive Sentiment")
-
-            st.dataframe(pos)
-
-            st.bar_chart(pos, x = "Phrase", y = "size", y_label = "Word", x_label = "Count", horizontal = True)
-
-            st.header("Negative Sentiment")
-
-            st.dataframe(neg)
-
-            st.bar_chart(neg, x = "Phrase", y = "size", y_label = "Word", x_label = "Count", horizontal = True, color = "#e57d7d")
-
-            st.header("Neutral Sentiment")
-
-            st.dataframe(neut)
-
-            st.bar_chart(neut, x = "Phrase", y = "size", y_label = "Word", x_label = "Count", horizontal = True)
-
-        st.header("Sentence and Results")
-
-        finalframe = pd.DataFrame()
-        finalframe['Sentence'] = paper['Sentences__']
-        finalframe['Sentiment'] = paper['Sentiment']
+            tab1, tab2, tab3, tab4 = st.tabs(["📈 Generate visualization", "📃 Reference", "📓 Recommended Reading", "⬇️ Download Help"])
+            with tab1:
+                #display tables and graphs
+    
+                with st.expander("Positive Sentiment"):
+                    st.dataframe(pos, use_container_width=True)
+                    figpos = px.bar(pos, x="Phrase", y="size", labels={"size": "Count", "Phrase": "Word"})      
+                    st.plotly_chart(figpos, use_container_width=True)
+    
+                with st.expander("Negative Sentiment"):
+                    st.dataframe(neg, use_container_width=True)
+                    figneg = px.bar(neg, x="Phrase", y="size", labels={"size": "Count", "Phrase": "Word"}, color_discrete_sequence=["#e57d7d"])
+                    st.plotly_chart(figneg, use_container_width=True)
+    
+                with st.expander("Neutral Sentiment"):
+                    st.dataframe(neut, use_container_width=True)
+                    figneut = px.bar(neut, x="Phrase", y="size", labels={"size": "Count", "Phrase": "Word"}, color_discrete_sequence=["#737a72"])
+                    st.plotly_chart(figneut, use_container_width=True)
 
 
-        st.dataframe(finalframe)
+                with st.expander("Sentence and Results"):
+                    finalframe = pd.DataFrame()
+                    finalframe['Sentence'] = paper['Sentences__']
+                    finalframe[['Polarity','Subjectivity']] = pd.DataFrame(paper['Sentiment'].tolist(), index = paper.index)
+            
+                    st.dataframe(finalframe, use_container_width=True)
 
+            with tab2:
+                st.markdown('**Steven, L. et al. (2018) TextBlob: Simplified Text Processing — TextBlob 0.15.2 documentation, Readthedocs.io.** https://textblob.readthedocs.io/en/dev/')
 
+            with tab3:
+                st.markdown('**Lamba, M., & Madhusudhan, M. (2021, July 31). Sentiment Analysis. Text Mining for Information Professionals, 191–211.** https://doi.org/10.1007/978-3-030-85085-2_7')
 
-    except:
+            with tab4:
+                st.subheader(':blue[Sentiment Analysis]', anchor=False)
+                st.write("Click the three dots at the top right then select the desired format")
+                st.markdown("![Downloading visualization](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/download_sentiment.png)")
+                st.divider()
+                st.subheader(':blue[CSV Results]', anchor=False)
+                st.text("Click Download button")
+                st.markdown("![Downloading results](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/sentitable.png)")
+
+    
+    except Exception as e:
+        st.write(e)
         st.error("Please ensure that your file is correct. Please contact us if you find that this is an error.", icon="🚨")
         st.stop()

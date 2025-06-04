@@ -28,56 +28,54 @@ mt1, mt2 = st.tabs(["Menu", "How to"])
 
 with mt1:   
 
-    st.header("Visualizations",divider=True)
-
-    col1, col2, col3 = st.columns(3)
-    with col1.container(border=True):
-        st.markdown("![Scattertext](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/scattertext.png)")
-        if st.button("Go to Scattertext"):
-            st.switch_page("pages/1 Scattertext.py")     
-
-
-    with col2.container(border=True):
-        st.markdown("![Sunburst](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/sunburst.png)")
-        if st.button("Go to Sunburst Visualization"):
-            st.switch_page("pages/4 Sunburst.py")
-
-
-    with col3.container(border=True):
-        st.markdown("![Bidirected network](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/bidirected.png)")
-        if st.button("Go to Bidirected Network"):
-            st.switch_page("pages/3 Bidirected Network.py")
-
-
     st.header("Analysis",divider=True)
 
-    col21,col22, col23, col24 = st.columns(4)
+    col1,col2, col3, col4 = st.columns(4)
 
-    with col21.container(border=True):
-        st.markdown("![Topic modeling](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/topicmodeling.png)")
-        if st.button("Go to Topic Modeling"):
-            st.switch_page("pages/2 Topic Modeling.py")
+    with col1.container(border=True):
+        st.markdown("![Stemming](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/lemma.png)")
+        if st.button("Go to Keywords Stem"):
+            st.switch_page("pages/6 Keywords Stem.py")         
+
     
-    with col22.container(border=True):
+    with col2.container(border=True):
         st.markdown("![Burst](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/burst.png)")
         if st.button("Go to Burst Detection"):
             st.switch_page("pages/5 Burst Detection.py")
     
-    with col23.container(border=True):
-        st.markdown("![Stemming](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/lemma.png)")
-        if st.button("Go to Keywords Stem"):
-            st.switch_page("pages/6 Keywords Stem.py")     
+    with col3.container(border=True):
+        st.markdown("![Topic modeling](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/topicmodeling.png)")
+        if st.button("Go to Topic Modeling"):
+            st.switch_page("pages/2 Topic Modeling.py")   
     
-    with col24.container(border=True):
+    with col4.container(border=True):
         st.markdown("![Sentiment](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/sentiment.png)")
         if st.button("Go to Sentiment Analysis"):
-            st.switch_page("pages/7 SentimentAnalysis.py")
-            
+            st.switch_page("pages/7 Sentiment Analysis.py")
+    
+    st.header("Visualizations",divider=True)
+
+    col21, col22, col23 = st.columns(3)
+    with col21.container(border=True):
+        st.markdown("![Scattertext](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/scattertext.png)")
+        if st.button("Go to Scattertext"):
+            st.switch_page("pages/1 Scattertext.py")     
+
+    with col22.container(border=True):
+        st.markdown("![Sunburst](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/sunburst.png)")
+        if st.button("Go to Sunburst Visualization"):
+            st.switch_page("pages/4 Sunburst.py")
+
+    with col23.container(border=True):
+        st.markdown("![Bidirected network](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/bidirected.png)")
+        if st.button("Go to Bidirected Network"):
+            st.switch_page("pages/3 Bidirected Network.py")            
+
 with mt2:
     st.header("Before you start", anchor=False)
     option = st.selectbox(
         'Please choose....',
-        ('Keyword Stem', 'Topic Modeling', 'Bidirected Network', 'Sunburst', 'Burst Detection', 'Scattertext'))
+        ('Keyword Stem', 'Topic Modeling', 'Bidirected Network', 'Sunburst', 'Burst Detection', 'Scattertext','Sentiment Analysis'))
    
     if option == 'Keyword Stem':
         tab1, tab2, tab3, tab4 = st.tabs(["Prologue", "Steps", "Requirements", "Download Result"])
@@ -97,7 +95,7 @@ with mt2:
             st.error("Please check what has changed. It's possible some keywords failed to find their roots.", icon="🚨")
             
         with tab3:
-            st.text("""
+            st.code("""
             +----------------+------------------------+---------------------------------+
             |     Source     |       File Type        |             Column              |
             +----------------+------------------------+---------------------------------+
@@ -116,8 +114,8 @@ with mt2:
             | Other          | .csv                   | Change your column to 'Keyword' |
             +----------------+------------------------+---------------------------------+
             | Hathitrust     | .json                  | htid (Hathitrust ID)            |
-            +----------------+------------------------+---------------------------------+           
-            """)
+            +----------------+------------------------+---------------------------------+
+            """, language=None)
 
         with tab4:  
              st.subheader(':blue[Result]', anchor=False)
@@ -144,7 +142,7 @@ with mt2:
             st.error("This app includes lemmatization and stopwords for the abstract text. Currently, we only offer English words.", icon="💬")
             
         with tab3:
-            st.text("""
+            st.code("""
             +----------------+------------------------+----------------------------------+
             |     Source     |       File Type        |              Column              |
             +----------------+------------------------+----------------------------------+
@@ -161,22 +159,27 @@ with mt2:
             +----------------+------------------------|                                  |
             | Hathitrust     | .json                  |                                  |
             +----------------+------------------------+----------------------------------+
-            """)
+            """, language=None)
 
         with tab4:  
-             st.subheader(':blue[pyLDA]', anchor=False)
-             st.button('Download image')
-             st.text("Click Download Image button.")
+            st.subheader(':blue[pyLDA]', anchor=False)
+            st.button('Download image')
+            st.text("Click Download Image button.")
              
-             st.divider()
-             st.subheader(':blue[Biterm]', anchor=False)
-             st.text("Click the three dots at the top right then select the desired format.")
-             st.markdown("![Downloading visualization](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/download_biterm.jpg)")
+            st.divider()
+            st.subheader(':blue[Biterm]', anchor=False)
+            st.text("Click the three dots at the top right then select the desired format.")
+            st.markdown("![Downloading visualization](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/download_biterm.jpg)")
              
-             st.divider()
-             st.subheader(':blue[BERTopic]', anchor=False)
-             st.text("Click the camera icon on the top right menu")
-             st.markdown("![Downloading visualization](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/download_bertopic.jpg)")
+            st.divider()
+            st.subheader(':blue[BERTopic]', anchor=False)
+            st.text("Click the camera icon on the top right menu")
+            st.markdown("![Downloading visualization](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/download_bertopic.jpg)")
+
+            st.divider()
+            st.subheader(':blue[CSV Result]', anchor=False)
+            st.text("Click Download button")
+            st.button('Download Results')
                              
     elif option == 'Bidirected Network':
         tab1, tab2, tab3, tab4 = st.tabs(["Prologue", "Steps", "Requirements", "Download Graph"])
@@ -198,7 +201,7 @@ with mt2:
             st.error("If the table contains many rows, the network will take more time to process. Please use it efficiently.", icon="⌛")
             
         with tab3:
-            st.text("""
+            st.code("""
             +----------------+------------------------+---------------------------------+
             |     Source     |       File Type        |             Column              |
             +----------------+------------------------+---------------------------------+
@@ -219,7 +222,7 @@ with mt2:
             +----------------+------------------------+---------------------------------+
             | Hathitrust     | .json                  | htid (Hathitrust ID)            |
             +----------------+------------------------+---------------------------------+
-            """)    
+            """, language=None)    
 
         with tab4:  
              st.subheader(':blue[Bidirected Network]', anchor=False)
@@ -240,7 +243,7 @@ with mt2:
             st.code('avg = sum(a * weights) / sum(weights)', language='python')
             
         with tab3:
-            st.text("""
+            st.code("""
             +----------------+------------------------+--------------------+
             |     Source     |       File Type        |     Column         |
             +----------------+------------------------+--------------------+
@@ -257,7 +260,7 @@ with mt2:
             +----------------+------------------------+--------------------+
             | Hathitrust     | .json                  | htid(Hathitrust ID)|
             +----------------+------------------------+--------------------+
-            """)          
+            """, language=None)          
 
         with tab4:  
              st.subheader(':blue[Sunburst]', anchor=False)
@@ -280,7 +283,7 @@ with mt2:
             st.error("This app includes lemmatization and stopwords. Currently, we only offer English words.", icon="💬")
             
         with tab3:
-            st.text("""
+            st.code("""
             +----------------+------------------------+----------------------------------+
             |     Source     |       File Type        |              Column              |
             +----------------+------------------------+----------------------------------+
@@ -297,7 +300,7 @@ with mt2:
             +----------------+------------------------|                                  |
             | Hathitrust     | .json                  |                                  |
             +----------------+------------------------+----------------------------------+
-            """)
+            """, language=None)
             
         with tab4:
             st.subheader(':blue[Burst Detection]', anchor=False)
@@ -329,7 +332,7 @@ with mt2:
             st.error("This app includes lemmatization and stopwords. Currently, we only offer English words.", icon="💬")
             
         with tab3:
-            st.text("""
+            st.code("""
             +----------------+------------------------+----------------------------------+
             |     Source     |       File Type        |              Column              |
             +----------------+------------------------+----------------------------------+
@@ -346,8 +349,51 @@ with mt2:
             +----------------+------------------------|                                  |
             | Hathitrust     | .json                  |                                  |
             +----------------+------------------------+----------------------------------+
-            """)
+            """, language=None)
             
         with tab4:
             st.subheader(':blue[Scattertext]', anchor=False)
             st.write("Click the :blue[Download SVG] on the right side.")
+
+
+    elif option == 'Sentiment Analysis':
+        tab1, tab2, tab3, tab4 = st.tabs(["Prologue", "Steps", "Requirements", "Download Visualization"])
+        with tab1:
+            st.write('Sentiment analysis uses natural language processing to identify patterns in large text datasets, revealing the writer’s opinions, emotions, and attitudes. It assesses subjectivity (objective vs. subjective), polarity (positive, negative, neutral), and emotions (e.g., anger, joy, sadness, surprise, jealousy).') 
+            st.divider()
+            st.write('💡 The idea came from this:')
+            st.write('Lamba, M., & Madhusudhan, M. (2021, July 31). Sentiment Analysis. Text Mining for Information Professionals, 191–211. https://doi.org/10.1007/978-3-030-85085-2_7')
+            
+        with tab2:
+            st.write("1. Put your file. Choose your prefered column to analyze")
+            st.write("2. Choose your preferred method and decide which words you want to remove")
+            st.write("3. Finally, you can visualize your data.")
+            
+        with tab3:
+            st.code("""
+            +----------------+------------------------+----------------------------------+
+            |     Source     |       File Type        |              Column              |
+            +----------------+------------------------+----------------------------------+
+            | Scopus         | Comma-separated values | Choose your preferred column     |
+            |                | (.csv)                 | that you have                    |
+            +----------------+------------------------|                                  |
+            | Web of Science | Tab delimited file     |                                  |
+            |                | (.txt)                 |                                  |
+            +----------------+------------------------|                                  |
+            | Lens.org       | Comma-separated values |                                  |
+            |                | (.csv)                 |                                  |
+            +----------------+------------------------|                                  |
+            | Other          | .csv                   |                                  |
+            +----------------+------------------------|                                  |
+            | Hathitrust     | .json                  |                                  |
+            +----------------+------------------------+----------------------------------+
+            """, language=None)
+            
+        with tab4:
+            st.subheader(':blue[Sentiment Analysis]', anchor=False)
+            st.write("Click the three dots at the top right then select the desired format")
+            st.markdown("![Downloading visualization](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/download_sentiment.png)")
+            st.divider()
+            st.subheader(':blue[CSV Results]', anchor=False)
+            st.text("Click Download button")
+            st.markdown("![Downloading results](https://raw.githubusercontent.com/faizhalas/library-tools/main/images/sentitable.png)")

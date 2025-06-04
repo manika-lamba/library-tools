@@ -18,6 +18,7 @@ from nltk.corpus import stopwords
 from nltk.stem.snowball import SnowballStemmer
 import sys
 import time
+import json
 from tools import sourceformat as sf
 
 #===config===
@@ -46,6 +47,7 @@ with st.popover("🔗 Menu"):
     st.page_link("pages/4 Sunburst.py", label="Sunburst", icon="4️⃣")
     st.page_link("pages/5 Burst Detection.py", label="Burst Detection", icon="5️⃣")
     st.page_link("pages/6 Keywords Stem.py", label="Keywords Stem", icon="6️⃣")
+    st.page_link("pages/7 Sentiment Analysis.py", label="Sentiment Analysis", icon="7️⃣")
     
 st.header("Bidirected Network", anchor=False)
 st.subheader('Put your file here...', anchor=False)
@@ -77,9 +79,18 @@ def upload(extype):
 
 @st.cache_data(ttl=3600)
 def conv_txt(extype):
-    if "pmc" in uploaded_file.name.lower():
+    if("pmc" in uploaded_file.name.lower() or "pubmed" in uploaded_file.name.lower()):
         file = uploaded_file
         papers = sf.medline(file)
+
+    elif("hathi" in uploaded_file.name.lower()):
+        papers = pd.read_csv(uploaded_file,sep = '\t')
+        papers = sf.htrc(papers)
+        col_dict={'title': 'title',
+        'rights_date_used': 'Year',
+        }
+        papers.rename(columns=col_dict, inplace=True)
+        
     else:
         col_dict = {'TI': 'Title',
                 'SO': 'Source title',
@@ -100,11 +111,16 @@ def conv_json(extype):
     col_dict={'title': 'title',
     'rights_date_used': 'Year',
     }
-    keywords = pd.read_json(uploaded_file)
+
+    data = json.load(uploaded_file)
+    hathifile = data['gathers']
+    keywords = pd.DataFrame.from_records(hathifile)
+    
     keywords = sf.htrc(keywords)
     keywords.rename(columns=col_dict,inplace=True)
     return keywords
 
+@st.cache_data(ttl=3600)
 def conv_pub(extype):
     if (get_ext(extype)).endswith('.tar.gz'):
         bytedata = extype.read()
@@ -214,7 +230,7 @@ if uploaded_file is not None:
                 'Maximum length of the itemsets generated',
                 2, 8, (2), on_change=reset_all)
     
-        tab1, tab2, tab3, tab4 = st.tabs(["📈 Result & Generate visualization", "📃 Reference", "📓 Recommended Reading","Downloda help"])
+        tab1, tab2, tab3, tab4 = st.tabs(["📈 Result & Generate visualization", "📃 Reference", "📓 Recommended Reading", "⬇️ Download Help"])
         
         with tab1:
             #===Association rules===
@@ -320,6 +336,7 @@ if uploaded_file is not None:
             st.subheader("Download table as CSV")
             st.text("Hover cursor over table, and click download arrow")
             st.image("images/tablenetwork.png")
+            
     except:
         st.error("Please ensure that your file is correct. Please contact us if you find that this is an error.", icon="🚨")
         st.stop()
